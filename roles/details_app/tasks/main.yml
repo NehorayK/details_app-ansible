@@ -78,3 +78,4 @@
   until: (health_check.status | default(0)) == 200
   retries: 10
   delay: 5
+  check_mode: no
