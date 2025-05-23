@@ -71,12 +71,16 @@
 
 - name: Wait for healthy response
   become: true
-  ansible.builtin.uri:
-    url: "http://localhost:{{ app_port }}{{ healthcheck_path }}"
-    status_code: 200
-    return_content: false
-    register: health_check
-  failed_when: false
-  retries: 10
-  delay: 5
-  until: health_check.status | default(0) == 200
+  block:
+    - name: Poll the /health endpoint until it returns 200
+      ansible.builtin.uri:
+        url: "http://localhost:{{ app_port }}{{ healthcheck_path }}"
+        return_content: false
+      register: health_check
+      until: health_check.status == 200
+      retries: 5
+      delay: 3
+
+    - name: Confirm application is healthy
+      debug:
+        msg: "✅ /details_app health endpoint returned {{ health_check.status }} OK"
