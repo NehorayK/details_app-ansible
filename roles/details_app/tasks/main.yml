@@ -1,3 +1,4 @@
+---
 - name: Ensure apt cache is up to date and required packages installed
   ansible.builtin.apt:
     update_cache: true
@@ -21,7 +22,7 @@
     dest: "{{ app_home }}/details_app"
     owner: "{{ app_user }}"
     group: "{{ app_user }}"
-    mode: "0755"
+    mode: '0755'
 
 - name: Fix ownership of the app directory
   ansible.builtin.file:
@@ -44,8 +45,8 @@
 - name: Deploy systemd unit
   ansible.builtin.template:
     src: details_app.service
-    dest: /etc/systemd/system/{{ service_name }}.service
-    mode: "0644"
+    dest: "/etc/systemd/system/{{ service_name }}.service"
+    mode: '0644'
 
 - name: Reload systemd daemon
   ansible.builtin.systemd:
@@ -59,9 +60,11 @@
     state: started
 
 - name: Wait for healthy response
-  ansible.builtin.shell:
-    cmd: "curl -sf http://localhost:{{ app_port }}{{ healthcheck_path }}"
+  ansible.builtin.uri:
+    url: "http://localhost:{{ app_port }}{{ healthcheck_path }}"
+    status_code: 200
+    return_content: false
   register: health_check
-  until: health_check.rc == 0
+  until: health_check.status == 200
   retries: 5
   delay: 3
