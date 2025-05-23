@@ -41,12 +41,6 @@ pipeline {
         sh "ansible-playbook --syntax-check ${PLAYBOOK} -i ${INVENTORY} -c paramiko"
       }
     }
-
-    stage('Dry Run') {
-      steps {
-        sh "ansible-playbook --check ${PLAYBOOK} -i ${INVENTORY} -c paramiko"
-      }
-    }
   }
 
   post {
