@@ -75,6 +75,6 @@
     status_code: 200
     return_content: false
   register: health_check
-  until: health_check.status == 200
+  until: health_check.status | default(health_check.status_code, 0) == 200
   retries: 10
   delay: 5
