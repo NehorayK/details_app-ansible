@@ -47,12 +47,6 @@ pipeline {
         sh "ansible-playbook --check ${PLAYBOOK} -i ${INVENTORY} -c paramiko"
       }
     }
-
-    stage('Deploy with Ansible') {
-      steps {
-        sh "ansible-playbook ${PLAYBOOK} -i ${INVENTORY} -c paramiko"
-      }
-    }
   }
 
   post {
