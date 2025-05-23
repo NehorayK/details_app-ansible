@@ -1,84 +1,69 @@
-pipeline {
-  agent any
-  environment {
-    // ensure pip --user scripts and Docker CLI are in PATH
-    PATH = "${env.HOME}/Library/Python/3.9/bin:/usr/local/bin:${env.PATH}"
-    INVENTORY = 'inventory.ini'
-    PLAYBOOK  = 'playbook.yml'
-  }
-  options {
-    ansiColor('xterm')
-    timestamps()
-    buildDiscarder(logRotator(numToKeepStr: '10'))
-  }
-  stages {
-    stage('Checkout') {
-      steps {
-        checkout scm
-      }
-    }
-    stage('Setup Environment') {
-      steps {
-        // verify Docker is available
-        sh 'which docker'
-        // install Ansible and lint
-        sh 'pip3 install --user ansible ansible-lint'
-      }
-    }
-    stage('Lint Ansible') {
-      steps {
-        sh 'ansible-lint roles/details_app/tasks/main.yml'
-      }
-    }
-    stage('Syntax Check') {
-      steps {
-        sh "ansible-playbook --syntax-check ${PLAYBOOK} -i ${INVENTORY}"
-      }
-    }
-    stage('Dry Run') {
-      steps {
-        sh "ansible-playbook --check ${PLAYBOOK} -i ${INVENTORY}"
-      }
-    }
-    stage('Build & Run Container') {
-      steps {
-        sh 'docker build -t ubuntu-systemd:22.04 -f Dockerfile .'
-        sh 'docker rm -f appserver || true'
-        sh '''
-          docker run -d --name appserver --privileged \
-            -v /sys/fs/cgroup:/sys/fs/cgroup:rw \
-            --tmpfs /run:exec,mode=755 \
-            --tmpfs /run/lock:mode=755 \
-            --tmpfs /tmp:rw \
-            -e container=docker ubuntu-systemd:22.04
-        '''
-      }
-    }
-    stage('Deploy with Ansible') {
-      steps {
-        sh "ansible-playbook ${PLAYBOOK} -i ${INVENTORY}"
-      }
-    }
-    stage('Integration Test') {
-      steps {
-        sh "docker exec appserver curl -fs http://localhost:8000/health"
-      }
-    }
-    stage('Teardown') {
-      steps {
-        sh 'docker rm -f appserver'
-      }
-    }
-  }
-  post {
-    success {
-      echo '✅ Pipeline succeeded!'
-    }
-    failure {
-      echo '❌ Pipeline failed.'
-    }
-    always {
-      archiveArtifacts artifacts: '**/*.log', allowEmptyArchive: true
-    }
-  }
-}
+- name: Ensure apt cache is up to date and required packages installed
+  ansible.builtin.apt:
+    update_cache: true
+    name:
+      - git
+      - curl
+      - python3-pip
+      - python3-packaging
+      - python3-venv
+    state: present
+
+- name: Ensure app user exists
+  ansible.builtin.user:
+    name: "{{ app_user }}"
+    home: "{{ app_home }}"
+    create_home: true
+
+- name: Copy application code from local Projects folder
+  ansible.builtin.copy:
+    src: ../projects/details_app/
+    dest: "{{ app_home }}/details_app"
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: "0755"
+
+- name: Fix ownership of the app directory
+  ansible.builtin.file:
+    path: "{{ app_home }}/details_app"
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    recurse: true
+
+- name: Create Python virtualenv
+  ansible.builtin.command:
+    cmd: "{{ python_bin }} -m venv {{ venv_path }}"
+  args:
+    creates: "{{ venv_path }}/bin/activate"
+
+- name: Install dependencies
+  ansible.builtin.pip:
+    virtualenv: "{{ venv_path }}"
+    requirements: "{{ app_home }}/details_app/requirements.txt"
+
+- name: Deploy systemd unit
+  ansible.builtin.template:
+    src: details_app.service
+    dest: /etc/systemd/system/{{ service_name }}.service
+    mode: "0644"
+
+- name: Reload systemd daemon
+  ansible.builtin.systemd:
+    daemon_reload: true
+  notify: restart details_app
+
+- name: Enable & start service
+  ansible.builtin.systemd:
+    name: "{{ service_name }}"
+    enabled: true
+    state: started
+
+- name: Wait for healthy response
+  ansible.builtin.uri:
+    url: "http://localhost:{{ app_port }}{{ healthcheck_path }}"
+    status_code: 200
+    return_content: no
+  register: health_check
+  until: health_check.status == 200
+  retries: 5
+  delay: 3
