@@ -18,15 +18,15 @@
     home: "{{ app_home }}"
     create_home: true
 
-- name: Clone application code from GitHub
+- name: Copy application code from workspace into the container
   become: true
-  ansible.builtin.git:
-    repo: "https://github.com/NehorayK/details_app.git"
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/projects/details_app/"
     dest: "{{ app_home }}/details_app"
-    version: main
-    force: true
-    update: true
-    accept_hostkey: true
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: '0755'
+    recurse: true
 
 - name: Fix ownership of the app directory
   become: true
