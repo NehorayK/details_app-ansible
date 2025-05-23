@@ -21,11 +21,12 @@
 - name: Copy application code from local Projects folder
   become: true
   ansible.builtin.copy:
-    src: projects/details_app/
+    src: "{{ playbook_dir }}/projects/details_app/"
     dest: "{{ app_home }}/details_app"
     owner: "{{ app_user }}"
     group: "{{ app_user }}"
     mode: '0755'
+    remote_src: no
 
 - name: Fix ownership of the app directory
   become: true
