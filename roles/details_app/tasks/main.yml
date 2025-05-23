@@ -1,8 +1,8 @@
 ---
 # roles/details_app/tasks/main.yml
-# ansible-lint: disable=truthy,new-line-at-end-of-file,trailing-spaces
 
 - name: Ensure apt cache is up to date and required packages installed
+  become: true
   ansible.builtin.apt:
     update_cache: true
     name:
@@ -14,12 +14,14 @@
     state: present
 
 - name: Ensure app user exists
+  become: true
   ansible.builtin.user:
     name: "{{ app_user }}"
     home: "{{ app_home }}"
     create_home: true
 
 - name: Copy application code from local Projects folder
+  become: true
   ansible.builtin.copy:
     src: ../projects/details_app/
     dest: "{{ app_home }}/details_app"
@@ -28,6 +30,7 @@
     mode: '0755'
 
 - name: Fix ownership of the app directory
+  become: true
   ansible.builtin.file:
     path: "{{ app_home }}/details_app"
     owner: "{{ app_user }}"
@@ -35,32 +38,34 @@
     recurse: true
 
 - name: Create Python virtualenv
+  become: true
   ansible.builtin.command:
     cmd: "{{ python_bin }} -m venv {{ venv_path }}"
   args:
     creates: "{{ venv_path }}/bin/activate"
 
 - name: Install dependencies
+  become: true
   ansible.builtin.pip:
     virtualenv: "{{ venv_path }}"
     requirements: "{{ app_home }}/details_app/requirements.txt"
 
-- name: Deploy systemd unit
+- name: Deploy systemd service unit file
+  become: true
   ansible.builtin.template:
     src: details_app.service
     dest: "/etc/systemd/system/{{ service_name }}.service"
     mode: '0644'
+  register: unit_changed
 
-- name: Reload systemd daemon
-  ansible.builtin.systemd:
-    daemon_reload: true
-  notify: restart details_app
-
-- name: Enable & start service
+- name: Reload systemd daemon and restart service if unit changed
+  become: true
   ansible.builtin.systemd:
     name: "{{ service_name }}"
+    daemon_reload: true
     enabled: true
-    state: started
+    state: restarted
+  when: unit_changed.changed
 
 - name: Wait for healthy response
   ansible.builtin.uri:

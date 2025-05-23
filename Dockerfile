@@ -1,30 +1,22 @@
+# details_app-ansible/Dockerfile
 FROM ubuntu:22.04
 
-# tell systemd it's in a container
-ENV container=docker
-
-# install systemd, dbus, SSH server, Python3 for Ansible
+# install sshd, Python3, pip, Docker CLI, curl
 RUN apt-get update \
- && DEBIAN_FRONTEND=noninteractive \
-    apt-get install -y --no-install-recommends \
-      systemd systemd-sysv dbus python3 python3-venv openssh-server \
- && apt-get clean \
+ && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+      openssh-server python3 python3-pip docker.io curl \
+ && pip3 install docker \
  && rm -rf /var/lib/apt/lists/*
 
-# set root password and allow root login over SSH, enable password auth
-RUN echo 'root:root' | chpasswd \
- && sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config \
- && sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config \
- && mkdir -p /run/sshd
+# configure SSHD
+RUN mkdir -p /var/run/sshd \
+ && echo 'root:root' | chpasswd \
+ && sed -i 's/#PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config \
+ && sed -i 's/#PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config
 
-# enable SSH under systemd
-RUN systemctl enable ssh
-
-# allow systemd to mount cgroups
-VOLUME [ "/sys/fs/cgroup" ]
-
+# expose SSH, mount Docker socket
 EXPOSE 22
+VOLUME [ "/var/run/docker.sock" ]
 
-# systemd must run in the foreground
-STOPSIGNAL SIGRTMIN+3
-CMD ["/lib/systemd/systemd"]
+# keep sshd in the foreground
+CMD ["/usr/sbin/sshd","-D"]
