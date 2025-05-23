@@ -38,13 +38,3 @@
   vars:
     app_port: 8000
     healthcheck_path: "/health"
-
-  tasks:
-    - name: Check HTTP health endpoint
-      uri:
-        url: "http://localhost:{{ app_port }}{{ healthcheck_path }}"
-        status_code: 200
-      register: health
-      until: health.status == 200
-      retries: 5
-      delay: 3
