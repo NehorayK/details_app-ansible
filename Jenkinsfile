@@ -1,15 +1,8 @@
 pipeline {
   agent any
   environment {
-    // ensure pip --user installs go into PATH
+    // ensure pip --user scripts and Docker CLI are in PATH
     PATH = "${env.HOME}/Library/Python/3.9/bin:/usr/local/bin:${env.PATH}"
-    INVENTORY = 'inventory.ini'
-    PLAYBOOK  = 'playbook.yml'
-  }
-  agent any
-  environment {
-    // Ensure Docker CLI and pip3 are on PATH
-    PATH = "/usr/local/bin:${env.PATH}"
     INVENTORY = 'inventory.ini'
     PLAYBOOK  = 'playbook.yml'
   }
@@ -26,9 +19,9 @@ pipeline {
     }
     stage('Setup Environment') {
       steps {
-        // Verify Docker is available
+        // verify Docker is available
         sh 'which docker'
-        // Install Ansible and lint tool
+        // install Ansible and lint
         sh 'pip3 install --user ansible ansible-lint'
       }
     }
@@ -68,7 +61,6 @@ pipeline {
     }
     stage('Integration Test') {
       steps {
-        // Verify the Flask app health endpoint
         sh "docker exec appserver curl -fs http://localhost:8000/health"
       }
     }
