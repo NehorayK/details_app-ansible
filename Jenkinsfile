@@ -2,12 +2,10 @@ pipeline {
   agent any
 
   environment {
-    // ensure pip3 installs go into your PATH
-    PATH                       = "${env.HOME}/Library/Python/3.9/bin:/usr/local/bin:${env.PATH}"
-    INVENTORY                  = 'inventory.ini'
-    PLAYBOOK                   = 'playbook.yml'
-    // force Ansible to use Paramiko so sshpass isn’t required
-    ANSIBLE_HOST_KEY_CHECKING  = 'False'
+    PATH                      = "${env.HOME}/Library/Python/3.9/bin:/usr/local/bin:${env.PATH}"
+    INVENTORY                 = 'inventory.ini'
+    PLAYBOOK                  = 'playbook.yml'
+    ANSIBLE_HOST_KEY_CHECKING = 'False'
   }
 
   options {
@@ -25,7 +23,6 @@ pipeline {
 
     stage('Setup Environment') {
       steps {
-        // install Ansible, lint tool, Paramiko transport into your local user
         sh 'pip3 install --user ansible ansible-lint paramiko'
       }
     }
@@ -41,13 +38,16 @@ pipeline {
         sh "ansible-playbook --syntax-check ${PLAYBOOK} -i ${INVENTORY} -c paramiko"
       }
     }
+
+    stage('Deploy with Ansible') {
+      steps {
+        sh "ansible-playbook ${PLAYBOOK} -i ${INVENTORY} -c paramiko"
+      }
+    }
   }
 
   post {
-    success { echo '✅ Pipeline succeeded!' }
-    failure { echo '❌ Pipeline failed.' }
-    always  {
-      archiveArtifacts artifacts: '**/*.log', allowEmptyArchive: true
-    }
+    success { echo "✅ Pipeline succeeded!" }
+    failure { echo "❌ Pipeline failed." }
   }
 }
