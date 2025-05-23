@@ -59,7 +59,8 @@
   become: true
   ansible.builtin.systemd:
     daemon_reload: true
-  notify: restart details_app
+  notify:
+    - restart details_app
 
 - name: Ensure details_app service is enabled and running
   become: true
