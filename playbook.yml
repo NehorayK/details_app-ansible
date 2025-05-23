@@ -1,0 +1,34 @@
+---
+- name: Deploy and configure details_app
+  hosts: details_servers
+  become: true
+  roles:
+    - details_app
+
+- name: Restart container to test persistence
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: Restart the appserver container
+      shell: docker restart appserver
+
+    - name: Pause to allow container to come back up
+      pause:
+        seconds: 5
+
+- name: Verify details_app is running after container restart
+  hosts: details_servers
+  become: true
+  vars:
+    app_port: 8000
+    healthcheck_path: /health
+  tasks:
+    - name: Check HTTP health endpoint
+      uri:
+        url: "http://localhost:{{ app_port }}{{ healthcheck_path }}"
+        status_code: 200
+      register: health
+      until: health.status == 200
+      retries: 5
+      delay: 3

@@ -1,0 +1,66 @@
+- name: Ensure apt cache is up to date and required packages installed
+  ansible.builtin.apt:
+    update_cache: yes
+    name:
+      - git
+      - python3-pip
+      - python3-packaging
+      - python3-venv
+    state: present
+
+- name: Ensure app user exists
+  ansible.builtin.user:
+    name: "{{ app_user }}"
+    home: "{{ app_home }}"
+    create_home: yes
+
+- name: Copy application code from local Projects folder
+  ansible.builtin.copy:
+    src: ../projects/details_app/
+    dest: "{{ app_home }}/details_app"
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: "0755"
+
+- name: Fix ownership of the app directory
+  ansible.builtin.file:
+    path: "{{ app_home }}/details_app"
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    recurse: yes
+
+- name: Create Python virtualenv
+  ansible.builtin.command:
+    cmd: "{{ python_bin }} -m venv {{ venv_path }}"
+  args:
+    creates: "{{ venv_path }}/bin/activate"
+
+- name: Install dependencies
+  ansible.builtin.pip:
+    virtualenv: "{{ venv_path }}"
+    requirements: "{{ app_home }}/details_app/requirements.txt"
+
+- name: Deploy systemd unit
+  ansible.builtin.template:
+    src: details_app.service
+    dest: /etc/systemd/system/{{ service_name }}.service
+
+- name: Reload systemd daemon
+  ansible.builtin.systemd:
+    daemon_reload: yes
+  notify: restart details_app
+
+- name: Enable & start service
+  ansible.builtin.systemd:
+    name: "{{ service_name }}"
+    enabled: yes
+    state: started
+
+- name: Wait for healthy response
+  ansible.builtin.uri:
+    url: "http://localhost:{{ app_port }}{{ healthcheck_path }}"
+    status_code: 200
+  register: result
+  until: result.status == 200
+  retries: 5
+  delay: 3

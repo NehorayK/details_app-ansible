@@ -1,0 +1,14 @@
+[Unit]
+Description=Details App Service
+After=network.target
+
+[Service]
+Type=simple
+User={{ app_user }}
+WorkingDirectory={{ app_home }}/details_app
+# Start Gunicorn with correct ASCII hyphens
+ExecStart={{ venv_path }}/bin/gunicorn --workers 3 --bind 0.0.0.0:{{ app_port }} wsgi:app
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

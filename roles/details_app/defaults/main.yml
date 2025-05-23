@@ -1,0 +1,4 @@
+app_user: details_app
+app_home: /home/{{ app_user }}
+repo_url: https://github.com/NehorayK/details_app.git
+service_name: details_app

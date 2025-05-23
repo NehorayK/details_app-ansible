@@ -1,0 +1,4 @@
+python_bin: /usr/bin/python3
+venv_path: "{{ app_home }}/venv"
+app_port: 8000
+healthcheck_path: /health
