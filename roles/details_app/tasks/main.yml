@@ -1,8 +1,9 @@
 - name: Ensure apt cache is up to date and required packages installed
   ansible.builtin.apt:
-    update_cache: yes
+    update_cache: true
     name:
       - git
+      - curl
       - python3-pip
       - python3-packaging
       - python3-venv
@@ -12,7 +13,7 @@
   ansible.builtin.user:
     name: "{{ app_user }}"
     home: "{{ app_home }}"
-    create_home: yes
+    create_home: true
 
 - name: Copy application code from local Projects folder
   ansible.builtin.copy:
@@ -27,7 +28,7 @@
     path: "{{ app_home }}/details_app"
     owner: "{{ app_user }}"
     group: "{{ app_user }}"
-    recurse: yes
+    recurse: true
 
 - name: Create Python virtualenv
   ansible.builtin.command:
@@ -44,23 +45,23 @@
   ansible.builtin.template:
     src: details_app.service
     dest: /etc/systemd/system/{{ service_name }}.service
+    mode: "0644"
 
 - name: Reload systemd daemon
   ansible.builtin.systemd:
-    daemon_reload: yes
+    daemon_reload: true
   notify: restart details_app
 
 - name: Enable & start service
   ansible.builtin.systemd:
     name: "{{ service_name }}"
-    enabled: yes
+    enabled: true
     state: started
 
 - name: Wait for healthy response
-  ansible.builtin.uri:
-    url: "http://localhost:{{ app_port }}{{ healthcheck_path }}"
-    status_code: 200
-  register: result
-  until: result.status == 200
+  ansible.builtin.shell:
+    cmd: "curl -sf http://localhost:{{ app_port }}{{ healthcheck_path }}"
+  register: health_check
+  until: health_check.rc == 0
   retries: 5
   delay: 3
