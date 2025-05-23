@@ -79,4 +79,3 @@
   until: health_check.status == 200
   retries: 10
   delay: 5
-  
