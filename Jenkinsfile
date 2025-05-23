@@ -17,7 +17,7 @@ pipeline {
     stage('Setup Environment') {
       steps {
         sh 'which docker'
-        sh 'pip3 install --user ansible ansible-lint'
+        sh 'pip3 install --user ansible ansible-lint paramiko'
       }
     }
     stage('Lint Ansible') {
