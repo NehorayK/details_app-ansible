@@ -75,11 +75,8 @@
     url: "http://localhost:{{ app_port }}{{ healthcheck_path }}"
     status_code: 200
     return_content: false
-    ignore_errors: true
-  register: health_check
+    register: health_check
+  failed_when: false
   retries: 10
   delay: 5
-  until:
-    - health_check.status is defined
-    - health_check.status == 200
-  when: health_check is not skipped
+  until: health_check.status | default(0) == 200
