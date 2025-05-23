@@ -61,7 +61,7 @@ Follow these steps to deploy the Details App efficiently:
 1. **Install Ansible**: Make sure Ansible is installed on your machine.
 2. **Clone the Repository**:  
         ```bash
-git clone https://github.com/NehorayK/details_app-ansible.git | cd details_app-ansible
+git clone https://github.com/NehorayK/details_app-ansible.git | cd details_app-ansible/
         ```
 3. **Configure Inventory**: Update the files in the `inventory/` directory with the target host information for your environment.
 4. **Run Playbooks**:  
