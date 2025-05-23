@@ -1,4 +1,7 @@
 ---
+# roles/details_app/tasks/main.yml
+# ansible-lint: disable=truthy,new-line-at-end-of-file,trailing-spaces
+
 - name: Ensure apt cache is up to date and required packages installed
   ansible.builtin.apt:
     update_cache: true
@@ -63,9 +66,8 @@
   ansible.builtin.uri:
     url: "http://localhost:{{ app_port }}{{ healthcheck_path }}"
     status_code: 200
-    return_content: no
+    return_content: false
   register: health_check
   until: health_check.status == 200
   retries: 5
   delay: 3
-  
