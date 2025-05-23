@@ -1,4 +1,5 @@
 ---
+
 - name: Ensure apt cache is up to date and required packages installed
   become: true
   ansible.builtin.apt:
@@ -21,7 +22,7 @@
 - name: Copy application code from local Projects folder
   become: true
   ansible.builtin.copy:
-    src: ../projects/details_app/
+    src: projects/details_app/
     dest: "{{ app_home }}/details_app"
     owner: "{{ app_user }}"
     group: "{{ app_user }}"
@@ -59,8 +60,7 @@
   become: true
   ansible.builtin.systemd:
     daemon_reload: true
-  notify:
-    - restart details_app
+  notify: restart details_app
 
 - name: Ensure details_app service is enabled and running
   become: true
