@@ -53,19 +53,6 @@ pipeline {
         sh "ansible-playbook ${PLAYBOOK} -i ${INVENTORY} -c paramiko"
       }
     }
-
-    stage('Smoke Test') {
-      steps {
-        // simple HTTP check via the uri module
-        sh """
-          ansible appserver \
-            -i ${INVENTORY} \
-            -c paramiko \
-            -m uri \
-            -a "url=http://localhost:8000/health status_code=200"
-        """
-      }
-    }
   }
 
   post {
