@@ -18,7 +18,7 @@
     home: "{{ app_home }}"
     create_home: true
 
-- name: Copy application code from workspace into the container
+- name: Copy application code from local Projects folder
   become: true
   ansible.builtin.copy:
     src: "{{ playbook_dir }}/projects/details_app/"
@@ -26,7 +26,6 @@
     owner: "{{ app_user }}"
     group: "{{ app_user }}"
     mode: '0755'
-    recurse: true
 
 - name: Fix ownership of the app directory
   become: true
