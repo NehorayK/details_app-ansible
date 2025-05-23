@@ -81,6 +81,10 @@
       retries: 5
       delay: 3
 
-    - name: Confirm application is healthy
-      ansible.builtin.debug:
-        msg: "✅ /details_app health endpoint returned {{ health_check.status }} OK"
+- name: Assert that /health returned HTTP 200
+  ansible.builtin.assert:
+    that:
+      - health_check.status == 200
+    fail_msg: "❌ Health check failed (got {{ health_check.status }})"
+    success_msg: "✅ Health check succeeded (got 200)"
+  become: true
