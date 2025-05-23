@@ -1,5 +1,4 @@
 ---
-
 - name: Ensure apt cache is up to date and required packages installed
   become: true
   ansible.builtin.apt:
