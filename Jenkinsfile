@@ -1,7 +1,6 @@
 pipeline {
   agent any
   environment {
-    // ensure pip --user scripts and Docker CLI are in PATH
     PATH = "${env.HOME}/Library/Python/3.9/bin:/usr/local/bin:${env.PATH}"
     INVENTORY = 'inventory.ini'
     PLAYBOOK  = 'playbook.yml'
