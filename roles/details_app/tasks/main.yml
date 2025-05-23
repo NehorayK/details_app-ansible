@@ -82,5 +82,5 @@
       delay: 3
 
     - name: Confirm application is healthy
-      debug:
+      ansible.builtin.debug:
         msg: "✅ /details_app health endpoint returned {{ health_check.status }} OK"
