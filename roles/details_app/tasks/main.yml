@@ -22,7 +22,7 @@
 - name: Copy application code from local Projects folder
   become: true
   ansible.builtin.copy:
-    src: "{{ lookup('env','HOME') }}/Projects/details_app/"
+    src: "{{ playbook_dir }}/projects/details_app/"
     dest: "{{ app_home }}/details_app"
     owner: "{{ app_user }}"
     group: "{{ app_user }}"
