@@ -1,3 +1,4 @@
+---
 - name: restart details_app
   become: true
   ansible.builtin.systemd:
