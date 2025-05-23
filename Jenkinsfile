@@ -1,13 +1,7 @@
 pipeline {
-  agent {
-    docker {
-      image 'python:3.10'
-      // mount Docker socket so we can start containers
-      args '-v /var/run/docker.sock:/var/run/docker.sock'
-    }
-  }
-  // make sure Jenkins picks up docker CLI from /usr/local/bin
+  agent any
   environment {
+    // Ensure Docker CLI and pip3 are on PATH
     PATH = "/usr/local/bin:${env.PATH}"
     INVENTORY = 'inventory.ini'
     PLAYBOOK  = 'playbook.yml'
@@ -25,8 +19,10 @@ pipeline {
     }
     stage('Setup Environment') {
       steps {
-        sh 'pip install --quiet ansible ansible-lint'
-        sh 'ansible --version'
+        // Verify Docker is available
+        sh 'which docker'
+        // Install Ansible and lint tool
+        sh 'pip3 install --user ansible ansible-lint'
       }
     }
     stage('Lint Ansible') {
@@ -44,11 +40,11 @@ pipeline {
         sh "ansible-playbook --check ${PLAYBOOK} -i ${INVENTORY}"
       }
     }
-    stage('Build Systemd Image & Run Container') {
+    stage('Build & Run Container') {
       steps {
         sh 'docker build -t ubuntu-systemd:22.04 -f Dockerfile .'
+        sh 'docker rm -f appserver || true'
         sh '''
-          docker rm -f appserver || true
           docker run -d --name appserver --privileged \
             -v /sys/fs/cgroup:/sys/fs/cgroup:rw \
             --tmpfs /run:exec,mode=755 \
@@ -65,11 +61,11 @@ pipeline {
     }
     stage('Integration Test') {
       steps {
-        // verifies the Flask app health endpoint inside the container
+        // Verify the Flask app health endpoint
         sh "docker exec appserver curl -fs http://localhost:8000/health"
       }
     }
-    stage('Tear Down') {
+    stage('Teardown') {
       steps {
         sh 'docker rm -f appserver'
       }
@@ -83,7 +79,6 @@ pipeline {
       echo '❌ Pipeline failed.'
     }
     always {
-      // optional: archive any logs or artifacts
       archiveArtifacts artifacts: '**/*.log', allowEmptyArchive: true
     }
   }
